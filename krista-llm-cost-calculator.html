@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krista LLM Access Cost Calculator</title>
+<style>
+  :root{
+    --krista-blue:#34C5E8;
+    --krista-blue-pale:#E8F7FC;
+    --ink:#1A1A1A;
+    --gray:#5B5B58;
+    --border:#E2E2E0;
+    --card:#EDFBFD;
+    --amber:#E9A93B;
+    --green:#2E9E5B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:#fff;
+    line-height:1.5;
+  }
+  .klam-wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:32px 20px 56px;
+  }
+  .klam-header{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .klam-eyebrow{
+    display:inline-block;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--krista-blue);
+    background:var(--krista-blue-pale);
+    padding:5px 12px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(24px,4vw,34px);
+    font-weight:800;
+    margin:0 0 10px;
+    letter-spacing:-.01em;
+  }
+  .klam-sub{
+    color:var(--gray);
+    font-size:16px;
+    max-width:620px;
+    margin:0 auto;
+  }
+  .klam-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+  @media(min-width:820px){
+    .klam-grid{grid-template-columns:1.05fr 1fr;align-items:start;}
+  }
+  .klam-card{
+    border:1px solid var(--border);
+    background:var(--card);
+    border-radius:12px;
+    padding:22px 22px 24px;
+  }
+  .klam-card h2{
+    font-size:13px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--gray);
+    margin:0 0 16px;
+  }
+  .klam-step-num{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;height:22px;
+    background:var(--krista-blue);
+    color:#08313d;
+    border-radius:50%;
+    font-size:12px;
+    font-weight:800;
+    margin-right:8px;
+  }
+  .klam-q{
+    margin-bottom:18px;
+  }
+  .klam-q:last-child{margin-bottom:0;}
+  .klam-q-label{
+    font-weight:700;
+    font-size:14.5px;
+    margin-bottom:9px;
+    display:block;
+  }
+  .klam-opts{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .klam-opt{
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:8px;
+    padding:9px 12px;
+    cursor:pointer;
+    font-size:13.5px;
+    transition:border-color .15s, background .15s;
+  }
+  .klam-opt:hover{border-color:var(--krista-blue);}
+  .klam-opt.klam-selected{
+    border-color:var(--krista-blue);
+    background:var(--krista-blue-pale);
+  }
+  .klam-opt input{margin-top:3px;flex-shrink:0;}
+  .klam-slider-row{
+    margin-bottom:22px;
+  }
+  .klam-slider-row:last-child{margin-bottom:0;}
+  .klam-slider-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-weight:700;
+    font-size:14px;
+    margin-bottom:8px;
+  }
+  .klam-slider-val{
+    color:var(--krista-blue);
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+  }
+  input[type=range]{
+    width:100%;
+    accent-color:var(--krista-blue);
+    height:4px;
+  }
+  .klam-slider-caption{
+    font-size:12px;
+    color:var(--gray);
+    margin-top:6px;
+  }
+  .klam-results{
+    position:sticky;
+    top:16px;
+  }
+  .klam-fit-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-weight:800;
+    font-size:13px;
+    padding:7px 13px;
+    border-radius:999px;
+    margin-bottom:12px;
+  }
+  .klam-fit-strong{background:#E4F6EA;color:var(--green);}
+  .klam-fit-good{background:var(--krista-blue-pale);color:#0E7A9C;}
+  .klam-fit-watch{background:#F2F1EC;color:var(--gray);}
+  .klam-fit-msg{
+    font-size:13.5px;
+    color:var(--gray);
+    margin:0 0 20px;
+  }
+  .klam-compare{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .klam-bar-row{
+    display:grid;
+    grid-template-columns:118px 1fr 90px;
+    align-items:center;
+    gap:10px;
+  }
+  .klam-bar-name{
+    font-size:12.5px;
+    font-weight:700;
+  }
+  .klam-bar-track{
+    background:#EFEFEC;
+    border-radius:6px;
+    height:22px;
+    overflow:hidden;
+    position:relative;
+  }
+  .klam-bar-fill{
+    height:100%;
+    border-radius:6px;
+    transition:width .25s ease;
+  }
+  .klam-bar-fill.frontier{background:var(--amber);}
+  .klam-bar-fill.krista{background:var(--krista-blue);}
+  .klam-bar-amount{
+    font-size:13px;
+    font-weight:800;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .klam-savings-box{
+    background:var(--ink);
+    color:#fff;
+    border-radius:10px;
+    padding:18px 20px;
+    text-align:center;
+    margin-bottom:16px;
+  }
+  .klam-savings-box .klam-big{
+    font-size:clamp(28px,5vw,36px);
+    font-weight:800;
+    color:var(--krista-blue);
+    line-height:1.1;
+  }
+  .klam-savings-box .klam-small{
+    font-size:12.5px;
+    color:#C9C9C6;
+    margin-top:6px;
+  }
+  .klam-stat-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .klam-stat{
+    flex:1;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:8px;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .klam-stat .klam-stat-num{
+    font-size:17px;
+    font-weight:800;
+  }
+  .klam-stat .klam-stat-label{
+    font-size:11px;
+    color:var(--gray);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-top:2px;
+  }
+  .klam-model-label{
+    font-weight:700;
+    font-size:13px;
+    margin-bottom:9px;
+    display:block;
+  }
+  .klam-model-btns{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-bottom:16px;
+  }
+  .klam-model-btn{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    border-radius:999px;
+    padding:6px 13px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .klam-model-btn:hover{border-color:var(--krista-blue);}
+  .klam-model-btn.klam-model-active{
+    border-color:var(--krista-blue);
+    background:var(--krista-blue);
+    color:#08313d;
+  }
+  .klam-headline-stat{
+    font-size:12px;
+    color:var(--gray);
+    background:var(--krista-blue-pale);
+    border-left:3px solid var(--krista-blue);
+    padding:10px 12px;
+    border-radius:0 6px 6px 0;
+    margin-bottom:18px;
+  }
+  .klam-cta{
+    display:block;
+    text-align:center;
+    background:var(--krista-blue);
+    color:#08313d;
+    font-weight:800;
+    text-decoration:none;
+    padding:13px 18px;
+    border-radius:8px;
+    font-size:14.5px;
+  }
+  .klam-cta:hover{opacity:.9;}
+  .klam-footnote{
+    font-size:11px;
+    color:var(--gray);
+    text-align:left;
+    margin-top:22px;
+    line-height:1.6;
+  }
+  .klam-footnote a{
+    color:#0E7A9C !important;
+    font-size:11px !important;
+    font-family:inherit !important;
+    font-weight:inherit !important;
+    line-height:inherit !important;
+    text-decoration:underline;
+  }
+
+  /* Quality & speed panel */
+  .klam-quality-panel{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:18px;
+  }
+  .klam-quality-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px;
+    font-weight:800;
+    font-size:13px;
+    margin-bottom:10px;
+  }
+  .klam-quality-badge{
+    font-size:11px;
+    font-weight:800;
+    padding:3px 9px;
+    border-radius:999px;
+    background:var(--krista-blue-pale);
+    color:#0E7A9C;
+  }
+  .klam-quality-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  .klam-quality-table th{
+    text-align:left;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--gray);
+    font-weight:700;
+    padding:0 6px 6px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .klam-quality-table td{
+    padding:6px 6px 6px 0;
+    border-bottom:1px solid var(--border);
+    font-variant-numeric:tabular-nums;
+  }
+  .klam-quality-table tr:last-child td{border-bottom:none;}
+  .klam-quality-note{
+    font-size:11px;
+    color:var(--gray);
+    margin-top:10px;
+    line-height:1.5;
+  }
+
+  /* What you get section */
+  .klam-getgrid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:16px;
+    margin-top:24px;
+  }
+  @media(min-width:820px){
+    .klam-getgrid{grid-template-columns:1fr 1fr;}
+  }
+  .klam-get-title{
+    font-size:20px;
+    font-weight:800;
+    margin:0 0 4px;
+  }
+  .klam-get-sub{
+    color:var(--gray);
+    font-size:14px;
+    margin:0 0 16px;
+  }
+  .klam-get-card{
+    border:1px solid var(--border);
+    background:var(--card);
+    border-radius:12px;
+    padding:20px;
+  }
+  .klam-get-card h3{
+    font-size:15px;
+    font-weight:800;
+    margin:0 0 8px;
+  }
+  .klam-get-card p{
+    font-size:13.5px;
+    color:var(--gray);
+    margin:0;
+    line-height:1.6;
+  }
+
+  /* Gate modal */
+  .klam-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(26,26,26,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:1000;
+  }
+  .klam-modal-overlay.klam-open{display:flex;}
+  .klam-modal{
+    background:#fff;
+    border-radius:12px;
+    max-width:420px;
+    width:100%;
+    padding:26px 24px;
+    position:relative;
+  }
+  .klam-modal-close{
+    position:absolute;
+    top:14px;right:16px;
+    background:none;
+    border:none;
+    font-size:18px;
+    color:var(--gray);
+    cursor:pointer;
+    line-height:1;
+  }
+  .klam-modal h3{
+    font-size:18px;
+    font-weight:800;
+    margin:0 0 6px;
+  }
+  .klam-modal p.klam-modal-sub{
+    font-size:13px;
+    color:var(--gray);
+    margin:0 0 18px;
+  }
+  .klam-field{
+    margin-bottom:12px;
+  }
+  .klam-field label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:5px;
+  }
+  .klam-field input{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:9px 11px;
+    font-size:13.5px;
+    font-family:inherit;
+  }
+  .klam-field input:focus{
+    outline:2px solid var(--krista-blue);
+    outline-offset:1px;
+  }
+  .klam-modal-submit{
+    width:100%;
+    background:var(--krista-blue);
+    color:#08313d;
+    border:none;
+    border-radius:8px;
+    padding:12px 16px;
+    font-weight:800;
+    font-size:14px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .klam-modal-submit:disabled{opacity:.6;cursor:default;}
+  .klam-modal-error{
+    font-size:12px;
+    color:#B3261E;
+    margin-top:10px;
+    display:none;
+  }
+  .klam-modal-error.klam-show{display:block;}
+  .klam-modal-retry-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:8px;
+  }
+  .klam-modal-skip{
+    font-size:11.5px;
+    color:var(--gray);
+    background:none;
+    border:none;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:0;
+    display:none;
+  }
+  .klam-modal-skip.klam-show{display:inline;}
+  .klam-cta-secondary{
+    display:block;
+    text-align:center;
+    background:#fff;
+    color:var(--ink);
+    font-weight:700;
+    text-decoration:none;
+    padding:11px 18px;
+    border-radius:8px;
+    font-size:13.5px;
+    border:1px solid var(--border);
+    margin-top:8px;
+  }
+  .klam-cta-secondary:hover{border-color:var(--krista-blue);}
+
+  /* Report view */
+  .klam-report{
+    display:none;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:24px;
+    margin-top:24px;
+    background:#fff;
+  }
+  .klam-report.klam-report-visible{display:block;}
+  .klam-report-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:16px;
+  }
+  .klam-report-head h2{
+    font-size:20px;
+    margin:0 0 4px;
+  }
+  .klam-report-head .klam-report-date{
+    font-size:11px;
+    color:var(--gray);
+  }
+  .klam-report-print-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    font-weight:700;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .klam-report-section{
+    margin-bottom:16px;
+  }
+  .klam-report-section h4{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--gray);
+    margin:0 0 8px;
+  }
+  .klam-report-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .klam-report-item{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12.5px;
+  }
+  .klam-report-item strong{display:block;font-size:15px;}
+
+  @media print{
+    /* The report is relocated to a direct child of <body> right before
+       printing (see printReport() in the script). That sidesteps any
+       positioned ancestor from the host page's layout — position:absolute
+       or fixed would anchor to whatever Elementor wrapper happens to have
+       position:relative set, not the actual page. Hiding every OTHER
+       direct child of body with display:none (not visibility:hidden)
+       fully collapses their height too, so there are no blank trailing
+       pages left over from the hidden site header/nav/footer. */
+    body.klam-report-ready > *{
+      display:none !important;
+    }
+    body.klam-report-ready > .klam-report{
+      display:block !important;
+      max-width:800px;
+      margin:0 auto;
+      padding:24px;
+      border:none;
+    }
+    .klam-report-print-btn{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="klam-wrap">
+
+  <div class="klam-grid">
+
+    <div class="klam-col">
+      <div class="klam-card" style="margin-bottom:20px;">
+        <h2><span class="klam-step-num">1</span>Tell us how you use LLMs today</h2>
+
+        <div class="klam-q" data-q="1">
+          <span class="klam-q-label">How are people at your company using LLMs today?</span>
+          <div class="klam-opts">
+            <label class="klam-opt"><input type="radio" name="q1" value="3"><span>Employees use personal ChatGPT / Claude / Gemini accounts — no oversight</span></label>
+            <label class="klam-opt"><input type="radio" name="q1" value="2"><span>We have a company license to one model, but no routing or governance layer</span></label>
+            <label class="klam-opt"><input type="radio" name="q1" value="0"><span>We already have a governance or routing layer in place</span></label>
+            <label class="klam-opt"><input type="radio" name="q1" value="1"><span>I don't know</span></label>
+          </div>
+        </div>
+
+        <div class="klam-q" data-q="2">
+          <span class="klam-q-label">What share of your LLM work is routine vs. complex reasoning?</span>
+          <div class="klam-opts">
+            <label class="klam-opt"><input type="radio" name="q2" value="3" data-routine="85"><span>Mostly routine — extraction, web research, Q&amp;A, summarization (70%+)</span></label>
+            <label class="klam-opt"><input type="radio" name="q2" value="2" data-routine="50"><span>Roughly an even split</span></label>
+            <label class="klam-opt"><input type="radio" name="q2" value="1" data-routine="25"><span>Mostly complex reasoning — strategy, novel analysis, high-stakes judgment</span></label>
+            <label class="klam-opt"><input type="radio" name="q2" value="1" data-routine="50"><span>I don't know</span></label>
+          </div>
+        </div>
+
+        <div class="klam-q" data-q="3">
+          <span class="klam-q-label">Do prompts ever touch sensitive or regulated data (PII, HIPAA, financials, confidential company info)?</span>
+          <div class="klam-opts">
+            <label class="klam-opt"><input type="radio" name="q3" value="3"><span>Yes, regularly</span></label>
+            <label class="klam-opt"><input type="radio" name="q3" value="2"><span>Occasionally</span></label>
+            <label class="klam-opt"><input type="radio" name="q3" value="0"><span>Rarely or never</span></label>
+            <label class="klam-opt"><input type="radio" name="q3" value="1"><span>I don't know</span></label>
+          </div>
+        </div>
+
+        <div class="klam-q" data-q="4">
+          <span class="klam-q-label">Roughly how many employees are prompting LLMs regularly?</span>
+          <div class="klam-opts">
+            <label class="klam-opt"><input type="radio" name="q4" value="1"><span>Fewer than 50</span></label>
+            <label class="klam-opt"><input type="radio" name="q4" value="2"><span>50–500</span></label>
+            <label class="klam-opt"><input type="radio" name="q4" value="3"><span>500+</span></label>
+            <label class="klam-opt"><input type="radio" name="q4" value="2"><span>I don't know</span></label>
+          </div>
+        </div>
+
+        <div class="klam-q" data-q="5">
+          <span class="klam-q-label">Roughly what does your organization spend monthly on frontier model tokens today?</span>
+          <div class="klam-opts">
+            <label class="klam-opt"><input type="radio" name="q5" value="1"><span>Less than $10,000</span></label>
+            <label class="klam-opt"><input type="radio" name="q5" value="2"><span>$10,000–$50,000</span></label>
+            <label class="klam-opt"><input type="radio" name="q5" value="3"><span>More than $50,000</span></label>
+            <label class="klam-opt"><input type="radio" name="q5" value="1"><span>I don't know</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="klam-card">
+        <h2><span class="klam-step-num">2</span>Estimate your usage</h2>
+
+        <div class="klam-slider-row">
+          <div class="klam-slider-label">
+            <span>Monthly LLM token volume</span>
+            <span class="klam-slider-val" id="tokenVal">50M tokens</span>
+          </div>
+          <input type="range" id="tokenSlider" min="1" max="1000" value="50" step="1">
+          <div class="klam-slider-caption">Rough org-wide monthly usage across all LLM-powered work. Not sure? 1M tokens ≈ 750,000 words, roughly 2,000–4,000 typical prompts.</div>
+        </div>
+
+        <div class="klam-slider-row">
+          <div class="klam-slider-label">
+            <span>% of routine work and queries</span>
+            <span class="klam-slider-val" id="pctVal">80%</span>
+          </div>
+          <input type="range" id="pctSlider" min="0" max="100" value="80" step="5">
+          <div class="klam-slider-caption">Defaults to the split from your answers above. Krista's benchmark testing found roughly 80% of enterprise workloads — routine data processing, agentic automation, standard Q&amp;A — run at near-parity quality on the Krista LLM. The rest routes to a frontier model automatically.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="klam-col klam-results">
+      <div class="klam-card">
+        <h2>Your results</h2>
+
+        <span class="klam-fit-badge klam-fit-good" id="fitBadge">Answer the questions to see your fit</span>
+        <p class="klam-fit-msg" id="fitMsg">Your fit assessment and savings estimate will update as you go.</p>
+
+        <span class="klam-model-label">Compare against</span>
+        <div class="klam-model-btns" id="modelBtns"></div>
+
+        <div class="klam-headline-stat">
+          Krista's own model runs at <strong>$0.30 per million tokens</strong>, contained inside your private instance — versus <strong id="modelPriceInline">$15.00</strong> per million output tokens for <strong id="modelNameInline">GPT-5.4 (flagship standard)</strong>. That's roughly <strong id="modelMultipleInline">50×</strong> cheaper on the routine work that makes up most enterprise LLM volume.
+        </div>
+
+        <div class="klam-quality-panel" id="qualityPanel"></div>
+
+        <div class="klam-compare">
+          <div class="klam-bar-row">
+            <span class="klam-bar-name" id="barFrontierLabel">All on frontier</span>
+            <div class="klam-bar-track"><div class="klam-bar-fill frontier" id="barFrontier" style="width:100%"></div></div>
+            <span class="klam-bar-amount" id="costFrontier">$750</span>
+          </div>
+          <div class="klam-bar-row">
+            <span class="klam-bar-name">With Krista routing</span>
+            <div class="klam-bar-track"><div class="klam-bar-fill krista" id="barKrista" style="width:20%"></div></div>
+            <span class="klam-bar-amount" id="costKrista">$153</span>
+          </div>
+        </div>
+
+        <div class="klam-savings-box">
+          <div class="klam-big" id="savingsPct">80%</div>
+          <div class="klam-small">estimated monthly cost reduction</div>
+        </div>
+
+        <div class="klam-stat-row">
+          <div class="klam-stat">
+            <div class="klam-stat-num" id="savingsMonthly">$597</div>
+            <div class="klam-stat-label">Monthly savings</div>
+          </div>
+          <div class="klam-stat">
+            <div class="klam-stat-num" id="savingsAnnual">$7,164</div>
+            <div class="klam-stat-label">Annual savings</div>
+          </div>
+        </div>
+
+        <button type="button" class="klam-cta" id="openGateBtn" style="border:none;cursor:pointer;">Get My Full Report →</button>
+        <a class="klam-cta-secondary" href="https://krista.ai/contact/?utm_source=calculator&amp;utm_medium=web&amp;utm_campaign=llm-cost-calculator" target="_blank" rel="noopener">Schedule a Strategy Session</a>
+      </div>
+
+      <p class="klam-footnote">Estimates only, based on Krista's <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">"Breaking the Celebrity LLM Monopoly"</a> benchmark report and standardized list pricing ($0.30/M tokens for the Krista LLM; comparison-model prices are per-1M output tokens, list price). Actual savings depend on your workload mix, model selection, and routing configuration.<br>Sources: <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">Breaking the Celebrity LLM Monopoly report</a> · <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> · <a href="https://claude.com/pricing#api" target="_blank" rel="noopener">Claude API pricing</a></p>
+    </div>
+
+  </div>
+
+  <div class="klam-getgrid">
+    <div style="grid-column:1/-1;">
+      <h2 class="klam-get-title">What you get with Krista</h2>
+      <p class="klam-get-sub">This isn't only a cost play. It's governance you don't have today.</p>
+    </div>
+    <div class="klam-get-card">
+      <h3>Role-based access &amp; model portfolios</h3>
+      <p>Each role gets its own model portfolio, guardrails, and budget. A research role can get a broader portfolio and a higher budget. An entry-level role gets a portfolio of inexpensive models and a spending cap. Routing, guardrails, budgets, and audit all key off role, so policy is consistent and enforced across the workforce, not just for whoever happens to ask for it.</p>
+    </div>
+    <div class="klam-get-card">
+      <h3>Governed MCP, not shadow MCP</h3>
+      <p>The Krista MCP Server turns Krista's extensions, conversations, and connected enterprise systems into governed MCP tools that any MCP-enabled AI client — Claude, ChatGPT, Gemini — can invoke. Every tool is scoped to the user's role, rate limiting stops a runaway model before it damages a back-end system, and every invocation is logged in an audit trail. Approved third-party MCP servers can be installed inside Krista too, instead of running ungoverned on someone's laptop.</p>
+    </div>
+  </div>
+
+  <div class="klam-report" id="reportView"></div>
+</div>
+
+<div class="klam-modal-overlay" id="gateOverlay">
+  <div class="klam-modal">
+    <button type="button" class="klam-modal-close" id="gateClose" aria-label="Close">✕</button>
+    <h3>Get your full report</h3>
+    <p class="klam-modal-sub">We'll use this to send you a copy and follow up if it's useful. No spam.</p>
+    <form id="gateForm">
+      <div class="klam-field">
+        <label for="gateEmail">Work email*</label>
+        <input type="email" id="gateEmail" required>
+      </div>
+      <div class="klam-field">
+        <label for="gateFirstName">First name*</label>
+        <input type="text" id="gateFirstName" required>
+      </div>
+      <div class="klam-field">
+        <label for="gateLastName">Last name*</label>
+        <input type="text" id="gateLastName" required>
+      </div>
+      <div class="klam-field">
+        <label for="gateCompany">Company*</label>
+        <input type="text" id="gateCompany" required>
+      </div>
+      <button type="submit" class="klam-modal-submit" id="gateSubmitBtn">Send My Report</button>
+      <div class="klam-modal-error" id="gateError">Something went wrong submitting the form. Please try again.</div>
+      <div class="klam-modal-retry-row">
+        <button type="button" class="klam-modal-skip" id="gateSkip">Continue without submitting →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const KRISTA_PRICE = 0.30;     // per million tokens, Krista LLM (private, contained)
+
+  // Comparison models: output price per 1M tokens (list pricing).
+  // Default is the standardized flagship comparator; the rest are the
+  // closed-source category leaders from Krista's benchmark report.
+  const MODELS = [
+    { id:'gpt-5.4',       label:'GPT-5.4 (standard)',   price:15.00, default:true },
+    { id:'gpt-5.5',       label:'GPT-5.5',               price:30.00 },
+    { id:'gpt-5.2',       label:'GPT-5.2',               price:14.00 },
+    { id:'claude-sonnet-4', label:'Claude Sonnet 4',     price:15.00 },
+    { id:'opus-4.8',      label:'Opus 4.8',              price:25.00 },
+    { id:'fable-5',       label:'Fable 5',                price:50.00 },
+    { id:'gemini-3-pro',  label:'Gemini 3 Pro Preview',  price:12.00 },
+    { id:'o3-mini',       label:'o3-mini',               price:4.40  }
+  ];
+  let activeModel = MODELS.find(function(m){ return m.default; }) || MODELS[0];
+
+  // Krista LLM's own results from "Breaking the Celebrity LLM Monopoly" (2,800+ enterprise
+  // records, scored by independent LLM judges). These are fixed; only the comparison model changes.
+  const KRISTA_BENCHMARK = {
+    overall: 83.4,
+    categories: {
+      genericData: { label:'Routine data processing', pass:88.5, latency:1.49 },
+      agentic:     { label:'Agentic automation',        pass:94.9, latency:2.68 },
+      qa:          { label:'Knowledge Q&A',              pass:80.8, latency:1.15 },
+      keu:         { label:'Dialogue summarization',     pass:97.1, latency:14.51 }
+    }
+  };
+
+  // Benchmark results only exist for models Krista actually tested. Models not in this
+  // report (gpt-5.4 standard, gpt-5.5, opus-4.8, fable-5) show an honest fallback instead
+  // of an invented comparison.
+  const BENCHMARKS = {
+    'gpt-5.2': {
+      overall: 85.7,
+      categories: {
+        genericData: { pass:88.6, latency:1.51 },
+        agentic:     { pass:92.4, latency:2.10 },
+        qa:          { pass:84.4, latency:1.83 },
+        keu:         { pass:100.0, latency:5.99 }
+      }
+    },
+    'claude-sonnet-4': {
+      overall: 83.3,
+      categories: {
+        genericData: { pass:87.5, latency:2.82 },
+        agentic:     { pass:96.8, latency:3.46 },
+        qa:          { pass:83.9, latency:3.72 },
+        keu:         { pass:98.6, latency:11.63 }
+      }
+    },
+    'gemini-3-pro': {
+      overall: 87.5,
+      categories: {
+        genericData: { pass:91.0, latency:5.50 },
+        agentic:     { pass:92.4, latency:9.51 },
+        qa:          { pass:86.3, latency:7.04 },
+        keu:         { pass:97.1, latency:11.19 }
+      }
+    },
+    'o3-mini': {
+      overall: 87.0,
+      categories: {
+        genericData: { pass:91.4, latency:6.03 },
+        agentic:     { pass:94.3, latency:6.12 },
+        qa:          { pass:78.7, latency:4.82 },
+        keu:         { pass:90.0, latency:5.74 }
+      }
+    }
+  };
+
+  const tokenSlider = document.getElementById('tokenSlider');
+  const pctSlider = document.getElementById('pctSlider');
+  const tokenVal = document.getElementById('tokenVal');
+  const pctVal = document.getElementById('pctVal');
+
+  const barFrontier = document.getElementById('barFrontier');
+  const barKrista = document.getElementById('barKrista');
+  const barFrontierLabel = document.getElementById('barFrontierLabel');
+  const costFrontier = document.getElementById('costFrontier');
+  const costKrista = document.getElementById('costKrista');
+  const savingsPct = document.getElementById('savingsPct');
+  const savingsMonthly = document.getElementById('savingsMonthly');
+  const savingsAnnual = document.getElementById('savingsAnnual');
+  const modelBtnsWrap = document.getElementById('modelBtns');
+  const modelPriceInline = document.getElementById('modelPriceInline');
+  const modelNameInline = document.getElementById('modelNameInline');
+  const modelMultipleInline = document.getElementById('modelMultipleInline');
+
+  const fitBadge = document.getElementById('fitBadge');
+  const fitMsg = document.getElementById('fitMsg');
+
+  function fmtMoney(n){
+    return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+  }
+
+  function renderModelButtons(){
+    modelBtnsWrap.innerHTML = '';
+    MODELS.forEach(function(model){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'klam-model-btn' + (model.id === activeModel.id ? ' klam-model-active' : '');
+      btn.textContent = model.label;
+      btn.setAttribute('data-model-id', model.id);
+      btn.addEventListener('click', function(){
+        activeModel = model;
+        renderModelButtons();
+        recalcCost();
+      });
+      modelBtnsWrap.appendChild(btn);
+    });
+  }
+
+  function recalcCost(){
+    const tokensM = parseFloat(tokenSlider.value);
+    const pct = parseFloat(pctSlider.value);
+    const frontierPrice = activeModel.price;
+
+    tokenVal.textContent = tokensM + 'M tokens';
+    pctVal.textContent = pct + '%';
+
+    const frontierCost = tokensM * frontierPrice;
+    const kristaCost = tokensM * (pct/100) * KRISTA_PRICE + tokensM * (1 - pct/100) * frontierPrice;
+    const savings = Math.max(frontierCost - kristaCost, 0);
+    const savingsPercent = frontierCost > 0 ? (savings / frontierCost) * 100 : 0;
+    const multiple = KRISTA_PRICE > 0 ? frontierPrice / KRISTA_PRICE : 0;
+
+    costFrontier.textContent = fmtMoney(frontierCost);
+    costKrista.textContent = fmtMoney(kristaCost);
+    barFrontier.style.width = '100%';
+    barKrista.style.width = Math.max((kristaCost/frontierCost)*100, 2) + '%';
+    barFrontierLabel.textContent = 'All on ' + activeModel.label;
+
+    savingsPct.textContent = Math.round(savingsPercent) + '%';
+    savingsMonthly.textContent = fmtMoney(savings);
+    savingsAnnual.textContent = fmtMoney(savings * 12);
+
+    modelPriceInline.textContent = '$' + frontierPrice.toFixed(2);
+    modelNameInline.textContent = activeModel.label;
+    modelMultipleInline.textContent = Math.round(multiple) + '×';
+
+    renderQualityPanel();
+  }
+
+  function renderQualityPanel(){
+    const panel = document.getElementById('qualityPanel');
+    const bench = BENCHMARKS[activeModel.id];
+
+    if(!bench){
+      panel.innerHTML =
+        '<div class="klam-quality-head">Quality &amp; speed <span class="klam-quality-badge">not benchmarked</span></div>' +
+        '<div class="klam-quality-note">Krista did not benchmark ' + activeModel.label + ' directly in "Breaking the Celebrity LLM Monopoly." Across the four benchmarked frontier models, Krista LLM scored 80&ndash;97% pass rates (near-parity) and ran up to 4&ndash;6&times; faster on routine data processing, agentic automation, and Q&amp;A. Pick a benchmarked model above (GPT-5.2, Claude Sonnet 4, Gemini 3 Pro Preview, or o3-mini) to see the exact comparison.</div>';
+      return;
+    }
+
+    const gapPts = Math.abs(KRISTA_BENCHMARK.overall - bench.overall);
+    let badgeLabel;
+    if(gapPts <= 5){
+      badgeLabel = 'near-parity';
+    } else if(KRISTA_BENCHMARK.overall > bench.overall){
+      badgeLabel = 'Krista leads';
+    } else {
+      badgeLabel = gapPts.toFixed(1) + ' pt gap';
+    }
+
+    const order = ['genericData','agentic','qa','keu'];
+    let rows = '';
+    order.forEach(function(key){
+      const k = KRISTA_BENCHMARK.categories[key];
+      const m = bench.categories[key];
+      let speedLabel;
+      if(m.latency > k.latency){
+        speedLabel = (m.latency / k.latency).toFixed(1) + '× faster';
+      } else {
+        speedLabel = (k.latency / m.latency).toFixed(1) + '× slower';
+      }
+      rows += '<tr><td>' + k.label + '</td><td>' + k.pass.toFixed(1) + '% · ' + k.latency.toFixed(2) + 's</td><td>' +
+        m.pass.toFixed(1) + '% · ' + m.latency.toFixed(2) + 's</td><td>' + speedLabel + '</td></tr>';
+    });
+
+    panel.innerHTML =
+      '<div class="klam-quality-head">Quality &amp; speed vs ' + activeModel.label +
+      ' <span class="klam-quality-badge">' + badgeLabel + ' (' + KRISTA_BENCHMARK.overall.toFixed(1) + '% vs ' + bench.overall.toFixed(1) + '% overall)</span></div>' +
+      '<table class="klam-quality-table"><thead><tr><th>Task type</th><th>Krista LLM</th><th>' + activeModel.label + '</th><th>Speed</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div class="klam-quality-note">Pass rate = share of responses scoring above the benchmark\'s enterprise quality threshold, judged by independent LLM judges (GPT-5.1 and Gemini 3 Pro) across 2,800+ real enterprise records. Krista LLM is not the fastest on every task &mdash; dialogue summarization runs slower even where quality holds up.</div>';
+  }
+
+  function recalcFit(){
+    let score = 0;
+    let answered = 0;
+    ['q1','q2','q3','q4','q5'].forEach(function(name){
+      const checked = document.querySelector('input[name="'+name+'"]:checked');
+      if(checked){
+        score += parseInt(checked.value, 10);
+        answered++;
+      }
+    });
+
+    if(answered === 0){
+      fitBadge.className = 'klam-fit-badge klam-fit-good';
+      fitBadge.textContent = 'Answer the questions to see your fit';
+      fitMsg.textContent = "Your fit assessment and savings estimate will update as you go.";
+      return;
+    }
+
+    let tier, label, msg;
+    if(score >= 11){
+      tier = 'klam-fit-strong';
+      label = 'Strong fit';
+      msg = "You're carrying the classic profile: ungoverned usage, sensitive data in prompts, real frontier spend, and a large routine workload. Krista LLM Access routes routine work to a private model automatically, redacts sensitive values before anything leaves the building, and gives you an audit trail you don't have today.";
+    } else if(score >= 7){
+      tier = 'klam-fit-good';
+      label = 'Good fit';
+      msg = "You have real routine volume and some governance gaps. Krista LLM Access can cut your routine-work cost sharply while adding role-based budgets, guardrails, and DLP you likely don't have in place today.";
+    } else {
+      tier = 'klam-fit-watch';
+      label = 'Worth a look';
+      msg = "Your workload skews toward complex reasoning or you already have some governance in place — but the cost math below still applies to whatever routine share you do have, and Krista's intelligent routing adds visibility most setups lack.";
+    }
+
+    fitBadge.className = 'klam-fit-badge ' + tier;
+    fitBadge.textContent = label;
+    fitMsg.textContent = msg;
+  }
+
+  // --- Email gate + HubSpot submission + printable report ---------------
+
+  // HubSpot Forms API submission target. Portal ID is confirmed; the Form GUID
+  // is a placeholder until a real HubSpot form exists.
+  // To finish setup: HubSpot > Marketing > Lead Capture > Forms > create a form
+  // with Email, First Name, Last Name, Company fields > Actions > Embed > copy
+  // the GUID out of the embed snippet (looks like a1b2c3d4-e5f6-...) and paste
+  // it in below.
+  const HUBSPOT_PORTAL_ID = '20318565';
+  const HUBSPOT_FORM_GUID = '0988b9f5-87e1-44f0-a276-1484e3543e97';
+
+  let reportUnlocked = false;
+  let gateSubmitAttempts = 0;
+
+  const gateOverlay = document.getElementById('gateOverlay');
+  const openGateBtn = document.getElementById('openGateBtn');
+  const gateClose = document.getElementById('gateClose');
+  const gateForm = document.getElementById('gateForm');
+  const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+  const gateError = document.getElementById('gateError');
+  const gateSkip = document.getElementById('gateSkip');
+  const reportView = document.getElementById('reportView');
+
+  function openGate(){
+    if(reportUnlocked){
+      revealReport();
+      return;
+    }
+    gateOverlay.classList.add('klam-open');
+  }
+
+  function closeGate(){
+    gateOverlay.classList.remove('klam-open');
+    gateError.classList.remove('klam-show');
+  }
+
+  openGateBtn.addEventListener('click', openGate);
+  gateClose.addEventListener('click', closeGate);
+  gateOverlay.addEventListener('click', function(e){
+    if(e.target === gateOverlay) closeGate();
+  });
+
+  function buildNotesSummary(){
+    const tokensM = parseFloat(tokenSlider.value);
+    const pct = parseFloat(pctSlider.value);
+    const lines = [
+      'Krista LLM Access Cost Calculator — submission summary',
+      '',
+      'Fit: ' + fitBadge.textContent,
+      fitMsg.textContent,
+      '',
+      'Q1. How are people using LLMs today? ' + getSelectedAnswerText('q1'),
+      'Q2. Routine vs. complex reasoning split? ' + getSelectedAnswerText('q2'),
+      'Q3. Sensitive/regulated data in prompts? ' + getSelectedAnswerText('q3'),
+      'Q4. Employees prompting regularly? ' + getSelectedAnswerText('q4'),
+      'Q5. Current monthly frontier spend? ' + getSelectedAnswerText('q5'),
+      '',
+      'Calculator inputs: ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, compared against ' + activeModel.label + ' ($' + activeModel.price.toFixed(2) + '/M tokens).',
+      'Cost — all on ' + activeModel.label + ': ' + costFrontier.textContent + '/mo. With Krista routing: ' + costKrista.textContent + '/mo.',
+      'Estimated savings: ' + savingsMonthly.textContent + '/mo (' + savingsPct.textContent + '), ' + savingsAnnual.textContent + '/yr.'
+    ];
+
+    const bench = BENCHMARKS[activeModel.id];
+    if(bench){
+      lines.push('Benchmark overall pass rate: Krista LLM ' + KRISTA_BENCHMARK.overall.toFixed(1) + '% vs ' + activeModel.label + ' ' + bench.overall.toFixed(1) + '%.');
+    } else {
+      lines.push('Benchmark data not available for ' + activeModel.label + ' specifically.');
+    }
+
+    return lines.join('\n');
+  }
+
+  function submitToHubSpot(payload){
+    const endpoint = 'https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID;
+    const body = {
+      fields: [
+        { name:'email', value: payload.email },
+        { name:'firstname', value: payload.firstName },
+        { name:'lastname', value: payload.lastName },
+        { name:'company', value: payload.company },
+        { name:'message', value: buildNotesSummary() }
+      ],
+      context: {
+        pageUri: (typeof window !== 'undefined' && window.location) ? window.location.href : '',
+        pageName: (typeof document !== 'undefined') ? document.title : ''
+      }
+    };
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(res){
+      if(!res.ok){ throw new Error('HubSpot submission failed: ' + res.status); }
+      return res;
+    });
+  }
+
+  gateForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    gateSubmitAttempts++;
+
+    const payload = {
+      email: document.getElementById('gateEmail').value.trim(),
+      firstName: document.getElementById('gateFirstName').value.trim(),
+      lastName: document.getElementById('gateLastName').value.trim(),
+      company: document.getElementById('gateCompany').value.trim()
+    };
+
+    gateSubmitBtn.disabled = true;
+    gateSubmitBtn.textContent = 'Sending...';
+    gateError.classList.remove('klam-show');
+
+    submitToHubSpot(payload).then(function(){
+      reportUnlocked = true;
+      gateSubmitBtn.disabled = false;
+      gateSubmitBtn.textContent = 'Send My Report';
+      closeGate();
+      revealReport();
+    }).catch(function(){
+      gateSubmitBtn.disabled = false;
+      gateSubmitBtn.textContent = 'Send My Report';
+      gateError.classList.add('klam-show');
+      if(gateSubmitAttempts >= 1){
+        gateSkip.classList.add('klam-show');
+      }
+    });
+  });
+
+  gateSkip.addEventListener('click', function(){
+    reportUnlocked = true;
+    closeGate();
+    revealReport();
+  });
+
+  function getSelectedAnswerText(name){
+    const checked = document.querySelector('input[name="'+name+'"]:checked');
+    if(!checked){ return 'Not answered'; }
+    const span = checked.closest('.klam-opt').querySelector('span');
+    return span ? span.textContent : 'Not answered';
+  }
+
+  function revealReport(){
+    const tokensM = parseFloat(tokenSlider.value);
+    const pct = parseFloat(pctSlider.value);
+    const generatedDate = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    const bench = BENCHMARKS[activeModel.id];
+    const fitClasses = fitBadge.className.replace('klam-fit-badge', '').trim();
+
+    let qualityHTML;
+    if(bench){
+      qualityHTML =
+        '<div class="klam-report-grid">' +
+          '<div class="klam-report-item"><strong>' + KRISTA_BENCHMARK.overall.toFixed(1) + '%</strong>Krista LLM overall pass rate</div>' +
+          '<div class="klam-report-item"><strong>' + bench.overall.toFixed(1) + '%</strong>' + activeModel.label + ' overall pass rate</div>' +
+        '</div>';
+    } else {
+      qualityHTML = '<p style="font-size:12.5px;color:var(--gray);">Benchmark data is not available for ' + activeModel.label + ' specifically. Across benchmarked frontier models, Krista LLM scored 80&ndash;97% near-parity pass rates.</p>';
+    }
+
+    reportView.innerHTML =
+      '<div class="klam-report-head">' +
+        '<div><h2>Krista LLM Access &mdash; Cost &amp; Fit Report</h2><div class="klam-report-date">Generated ' + generatedDate + '</div></div>' +
+        '<button type="button" class="klam-report-print-btn" id="printReportBtn">Print / Save as PDF</button>' +
+      '</div>' +
+
+      '<div class="klam-report-section"><h4>Your profile</h4>' +
+        '<p style="font-size:12.5px;line-height:1.7;">' +
+          '<strong>Current usage:</strong> ' + getSelectedAnswerText('q1') + '<br>' +
+          '<strong>Workload mix:</strong> ' + getSelectedAnswerText('q2') + '<br>' +
+          '<strong>Sensitive data exposure:</strong> ' + getSelectedAnswerText('q3') + '<br>' +
+          '<strong>Team size:</strong> ' + getSelectedAnswerText('q4') + '<br>' +
+          '<strong>Current frontier spend:</strong> ' + getSelectedAnswerText('q5') +
+        '</p>' +
+        '<span class="klam-fit-badge ' + fitClasses + '">' + fitBadge.textContent + '</span>' +
+        '<p style="font-size:12.5px;color:var(--gray);margin-top:8px;">' + fitMsg.textContent + '</p>' +
+      '</div>' +
+
+      '<div class="klam-report-section"><h4>Cost estimate &mdash; ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, vs. ' + activeModel.label + '</h4>' +
+        '<div class="klam-report-grid">' +
+          '<div class="klam-report-item"><strong>' + costFrontier.textContent + '</strong>All on ' + activeModel.label + '</div>' +
+          '<div class="klam-report-item"><strong>' + costKrista.textContent + '</strong>With Krista routing</div>' +
+          '<div class="klam-report-item"><strong>' + savingsMonthly.textContent + '</strong>Monthly savings</div>' +
+          '<div class="klam-report-item"><strong>' + savingsAnnual.textContent + '</strong>Annual savings</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="klam-report-section"><h4>Quality &amp; speed</h4>' + qualityHTML + '</div>' +
+
+      '<div class="klam-report-section"><h4>What you get with Krista</h4>' +
+        '<p style="font-size:12.5px;color:var(--gray);line-height:1.6;"><strong>Role-based access &amp; model portfolios:</strong> each role gets its own model portfolio, guardrails, and budget, enforced consistently across the workforce.</p>' +
+        '<p style="font-size:12.5px;color:var(--gray);line-height:1.6;"><strong>Governed MCP:</strong> the Krista MCP Server turns Krista extensions and conversations into governed MCP tools any AI client can invoke, with role-scoped access, rate limiting, and a full audit trail.</p>' +
+      '</div>' +
+
+      '<div class="klam-report-section"><h4>Sources</h4>' +
+        '<p style="font-size:11px;color:var(--gray);">Krista <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">"Breaking the Celebrity LLM Monopoly"</a> benchmark report &middot; OpenAI API pricing (developers.openai.com/api/docs/pricing) &middot; Claude API pricing (claude.com/pricing)</p>' +
+      '</div>';
+
+    reportView.classList.add('klam-report-visible');
+    document.body.classList.add('klam-report-ready');
+    document.getElementById('printReportBtn').addEventListener('click', printReport);
+    reportView.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function printReport(){
+    // Move the report to be a direct child of <body> for the print pass,
+    // so it escapes any Elementor wrapper on the host page that might be
+    // position:relative (which would otherwise hijack an absolute/fixed
+    // report position) or otherwise constrain its width. Restored to its
+    // original spot afterward so the on-screen layout is unaffected.
+    const originalParent = reportView.parentNode;
+    const originalNextSibling = reportView.nextSibling;
+
+    function restore(){
+      if(originalNextSibling){
+        originalParent.insertBefore(reportView, originalNextSibling);
+      } else {
+        originalParent.appendChild(reportView);
+      }
+      window.removeEventListener('afterprint', restore);
+    }
+    window.addEventListener('afterprint', restore);
+
+    document.body.appendChild(reportView);
+    window.print();
+  }
+
+  function highlightSelected(input){
+    const group = document.querySelectorAll('input[name="'+input.name+'"]');
+    group.forEach(function(radio){
+      radio.closest('.klam-opt').classList.toggle('klam-selected', radio.checked);
+    });
+  }
+
+  document.querySelectorAll('.klam-opt input[type=radio]').forEach(function(radio){
+    radio.addEventListener('change', function(){
+      highlightSelected(radio);
+      recalcFit();
+      if(radio.name === 'q2' && radio.dataset.routine){
+        pctSlider.value = radio.dataset.routine;
+        recalcCost();
+      }
+    });
+  });
+
+  tokenSlider.addEventListener('input', recalcCost);
+  pctSlider.addEventListener('input', recalcCost);
+
+  renderModelButtons();
+  recalcCost();
+  recalcFit();
+})();
+</script>
+
+</body>
+</html>
