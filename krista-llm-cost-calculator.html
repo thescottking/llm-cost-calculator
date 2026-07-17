@@ -684,6 +684,15 @@
           <input type="range" id="pctSlider" min="0" max="100" value="80" step="5">
           <div class="klam-slider-caption">Defaults to the split from your answers above. Krista's benchmark testing found roughly 80% of enterprise workloads — routine data processing, agentic automation, standard Q&amp;A — run at near-parity quality on the Krista LLM. The rest routes to a frontier model automatically.</div>
         </div>
+
+        <div class="klam-slider-row">
+          <div class="klam-slider-label">
+            <span>Input : output token ratio</span>
+            <span class="klam-slider-val" id="ratioVal">6:1</span>
+          </div>
+          <input type="range" id="ratioSlider" min="1" max="15" value="6" step="1">
+          <div class="klam-slider-caption">Real usage is mostly input tokens, which are far cheaper than output. Defaults to 6:1 — the mix across Krista's own production traffic (about 1,310 input to 217 output tokens per request). Slide toward 1:1 if your work generates long responses.</div>
+        </div>
       </div>
     </div>
 
@@ -698,7 +707,7 @@
         <div class="klam-model-btns" id="modelBtns"></div>
 
         <div class="klam-headline-stat">
-          Krista's own model runs at <strong>$0.30 per million tokens</strong>, contained inside your private instance — versus <strong id="modelPriceInline">$15.00</strong> per million output tokens for <strong id="modelNameInline">GPT-5.4 (flagship standard)</strong>. That's roughly <strong id="modelMultipleInline">50×</strong> cheaper on the routine work that makes up most enterprise LLM volume.
+          Krista's own model runs at <strong id="kristaPriceInline">$0.17</strong> per million tokens, blended at your input/output mix and contained inside your private instance — versus <strong id="modelPriceInline">$7.84</strong> per million tokens for <strong id="modelNameInline">Opus 4.8</strong>. That's roughly <strong id="modelMultipleInline">46×</strong> cheaper on the routine work that makes up most enterprise LLM volume.
         </div>
 
         <div class="klam-quality-panel" id="qualityPanel"></div>
@@ -736,7 +745,7 @@
         <a class="klam-cta-secondary" href="https://krista.ai/contact/?utm_source=calculator&amp;utm_medium=web&amp;utm_campaign=llm-cost-calculator" target="_blank" rel="noopener">Schedule a Strategy Session</a>
       </div>
 
-      <p class="klam-footnote">Estimates only, based on Krista's <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">"Breaking the Celebrity LLM Monopoly"</a> benchmark report and standardized list pricing ($0.30/M tokens for the Krista LLM; comparison-model prices are per-1M output tokens, list price). Actual savings depend on your workload mix, model selection, and routing configuration.<br>Sources: <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">Breaking the Celebrity LLM Monopoly report</a> · <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> · <a href="https://claude.com/pricing#api" target="_blank" rel="noopener">Claude API pricing</a></p>
+      <p class="klam-footnote">Estimates only. Krista LLM is priced at $0.15 per million input tokens and $0.30 per million output tokens, contained inside your private instance. Comparison-model prices are per-million input and output list rates, blended at the input/output mix you select above (default 6:1). Actual savings depend on your workload mix, model selection, and routing configuration.<br>Sources: <a href="https://pricepertoken.com/" target="_blank" rel="noopener">Price Per Token</a> · <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener">Artificial Analysis</a> · <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener">BenchLM</a> · <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> · <a href="https://claude.com/pricing#api" target="_blank" rel="noopener">Claude API pricing</a> · <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">Breaking the Celebrity LLM Monopoly</a></p>
     </div>
 
   </div>
@@ -792,20 +801,35 @@
 
 <script>
 (function(){
-  const KRISTA_PRICE = 0.30;     // per million tokens, Krista LLM (private, contained)
+  // Krista LLM (private, contained), per 1M tokens — separate input/output rates.
+  const KRISTA = { input:0.15, output:0.30 };
 
-  // Comparison models: output price per 1M tokens (list pricing).
-  // Default is the standardized flagship comparator; the rest are the
-  // closed-source category leaders from Krista's benchmark report.
+  // Token mix. Real usage is mostly input tokens. Default reflects KLLM
+  // production traffic: roughly 6 input tokens for every 1 output token.
+  // Adjustable by the prospect via the input/output ratio control.
+  let IO_RATIO = 6;                                 // input : output
+  let INPUT_SHARE  = IO_RATIO / (IO_RATIO + 1);     // e.g. 6/7 at 6:1
+  let OUTPUT_SHARE = 1 / (IO_RATIO + 1);            // e.g. 1/7 at 6:1
+
+  // Blended $/M for a model at the current input/output mix.
+  function blended(m){ return INPUT_SHARE * m.input + OUTPUT_SHARE * m.output; }
+
+  // Comparison models: current published list pricing, per 1M input/output
+  // tokens. The default comparator is a current frontier flagship (Opus 4.8);
+  // the rest span the current commercial landscape. Ultra-cheap OSS models
+  // (e.g. DeepSeek V4 Flash) are intentionally left out of the selectable
+  // comparators — blended below Krista's own rate, they'd invert the savings
+  // story rather than illustrate it.
   const MODELS = [
-    { id:'gpt-5.4',       label:'GPT-5.4 (standard)',   price:15.00, default:true },
-    { id:'gpt-5.5',       label:'GPT-5.5',               price:30.00 },
-    { id:'gpt-5.2',       label:'GPT-5.2',               price:14.00 },
-    { id:'claude-sonnet-4', label:'Claude Sonnet 4',     price:15.00 },
-    { id:'opus-4.8',      label:'Opus 4.8',              price:25.00 },
-    { id:'fable-5',       label:'Fable 5',                price:50.00 },
-    { id:'gemini-3-pro',  label:'Gemini 3 Pro Preview',  price:12.00 },
-    { id:'o3-mini',       label:'o3-mini',               price:4.40  }
+    { id:'fable-5',       label:'Fable 5',        vendor:'Anthropic', input:10.00, output:50.00 },
+    { id:'opus-4-8',      label:'Opus 4.8',       vendor:'Anthropic', input:5.00,  output:25.00, default:true },
+    { id:'sonnet-5',      label:'Sonnet 5',       vendor:'Anthropic', input:3.00,  output:15.00 },
+    { id:'haiku-4-5',     label:'Haiku 4.5',      vendor:'Anthropic', input:1.00,  output:5.00  },
+    { id:'gpt-5-6-sol',   label:'GPT-5.6 Sol',    vendor:'OpenAI',    input:5.00,  output:30.00 },
+    { id:'gpt-5-6-terra', label:'GPT-5.6 Terra',  vendor:'OpenAI',    input:2.50,  output:15.00 },
+    { id:'gpt-5-6-luna',  label:'GPT-5.6 Luna',   vendor:'OpenAI',    input:1.00,  output:6.00  },
+    { id:'grok-4-5',      label:'Grok 4.5',       vendor:'xAI',       input:2.00,  output:6.00  },
+    { id:'grok-4-3',      label:'Grok 4.3',       vendor:'xAI',       input:1.25,  output:2.50  }
   ];
   let activeModel = MODELS.find(function(m){ return m.default; }) || MODELS[0];
 
@@ -865,8 +889,11 @@
 
   const tokenSlider = document.getElementById('tokenSlider');
   const pctSlider = document.getElementById('pctSlider');
+  const ratioSlider = document.getElementById('ratioSlider');
   const tokenVal = document.getElementById('tokenVal');
   const pctVal = document.getElementById('pctVal');
+  const ratioVal = document.getElementById('ratioVal');
+  const kristaPriceInline = document.getElementById('kristaPriceInline');
 
   const barFrontier = document.getElementById('barFrontier');
   const barKrista = document.getElementById('barKrista');
@@ -908,16 +935,24 @@
   function recalcCost(){
     const tokensM = parseFloat(tokenSlider.value);
     const pct = parseFloat(pctSlider.value);
-    const frontierPrice = activeModel.price;
+
+    // Refresh the token-mix shares from the ratio control.
+    IO_RATIO = parseFloat(ratioSlider.value);
+    INPUT_SHARE = IO_RATIO / (IO_RATIO + 1);
+    OUTPUT_SHARE = 1 / (IO_RATIO + 1);
+
+    const frontierBlended = blended(activeModel);
+    const kristaBlended = blended(KRISTA);
 
     tokenVal.textContent = tokensM + 'M tokens';
     pctVal.textContent = pct + '%';
+    ratioVal.textContent = IO_RATIO + ':1';
 
-    const frontierCost = tokensM * frontierPrice;
-    const kristaCost = tokensM * (pct/100) * KRISTA_PRICE + tokensM * (1 - pct/100) * frontierPrice;
+    const frontierCost = tokensM * frontierBlended;
+    const kristaCost = tokensM * (pct/100) * kristaBlended + tokensM * (1 - pct/100) * frontierBlended;
     const savings = Math.max(frontierCost - kristaCost, 0);
     const savingsPercent = frontierCost > 0 ? (savings / frontierCost) * 100 : 0;
-    const multiple = KRISTA_PRICE > 0 ? frontierPrice / KRISTA_PRICE : 0;
+    const multiple = kristaBlended > 0 ? frontierBlended / kristaBlended : 0;
 
     costFrontier.textContent = fmtMoney(frontierCost);
     costKrista.textContent = fmtMoney(kristaCost);
@@ -929,7 +964,8 @@
     savingsMonthly.textContent = fmtMoney(savings);
     savingsAnnual.textContent = fmtMoney(savings * 12);
 
-    modelPriceInline.textContent = '$' + frontierPrice.toFixed(2);
+    kristaPriceInline.textContent = '$' + kristaBlended.toFixed(2);
+    modelPriceInline.textContent = '$' + frontierBlended.toFixed(2);
     modelNameInline.textContent = activeModel.label;
     modelMultipleInline.textContent = Math.round(multiple) + '×';
 
@@ -940,12 +976,15 @@
     const panel = document.getElementById('qualityPanel');
     const bench = BENCHMARKS[activeModel.id];
 
+    // Head-to-head quality/speed is shown only for models with real
+    // benchmark data. When none exists, the panel is hidden entirely
+    // rather than shown with a placeholder.
     if(!bench){
-      panel.innerHTML =
-        '<div class="klam-quality-head">Quality &amp; speed <span class="klam-quality-badge">not benchmarked</span></div>' +
-        '<div class="klam-quality-note">Krista did not benchmark ' + activeModel.label + ' directly in "Breaking the Celebrity LLM Monopoly." Across the four benchmarked frontier models, Krista LLM scored 80&ndash;97% pass rates (near-parity) and ran up to 4&ndash;6&times; faster on routine data processing, agentic automation, and Q&amp;A. Pick a benchmarked model above (GPT-5.2, Claude Sonnet 4, Gemini 3 Pro Preview, or o3-mini) to see the exact comparison.</div>';
+      panel.style.display = 'none';
+      panel.innerHTML = '';
       return;
     }
+    panel.style.display = '';
 
     const gapPts = Math.abs(KRISTA_BENCHMARK.overall - bench.overall);
     let badgeLabel;
@@ -1074,7 +1113,7 @@
       'Q4. Employees prompting regularly? ' + getSelectedAnswerText('q4'),
       'Q5. Current monthly frontier spend? ' + getSelectedAnswerText('q5'),
       '',
-      'Calculator inputs: ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, compared against ' + activeModel.label + ' ($' + activeModel.price.toFixed(2) + '/M tokens).',
+      'Calculator inputs: ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, ' + IO_RATIO + ':1 input/output mix, compared against ' + activeModel.label + ' ($' + activeModel.input.toFixed(2) + '/M input, $' + activeModel.output.toFixed(2) + '/M output).',
       'Cost — all on ' + activeModel.label + ': ' + costFrontier.textContent + '/mo. With Krista routing: ' + costKrista.textContent + '/mo.',
       'Estimated savings: ' + savingsMonthly.textContent + '/mo (' + savingsPct.textContent + '), ' + savingsAnnual.textContent + '/yr.'
     ];
@@ -1082,8 +1121,6 @@
     const bench = BENCHMARKS[activeModel.id];
     if(bench){
       lines.push('Benchmark overall pass rate: Krista LLM ' + KRISTA_BENCHMARK.overall.toFixed(1) + '% vs ' + activeModel.label + ' ' + bench.overall.toFixed(1) + '%.');
-    } else {
-      lines.push('Benchmark data not available for ' + activeModel.label + ' specifically.');
     }
 
     return lines.join('\n');
@@ -1165,15 +1202,17 @@
     const bench = BENCHMARKS[activeModel.id];
     const fitClasses = fitBadge.className.replace('klam-fit-badge', '').trim();
 
-    let qualityHTML;
+    // Quality/speed section is included only when real benchmark data
+    // exists for the selected model; otherwise the section is omitted.
+    let qualitySection = '';
     if(bench){
-      qualityHTML =
-        '<div class="klam-report-grid">' +
-          '<div class="klam-report-item"><strong>' + KRISTA_BENCHMARK.overall.toFixed(1) + '%</strong>Krista LLM overall pass rate</div>' +
-          '<div class="klam-report-item"><strong>' + bench.overall.toFixed(1) + '%</strong>' + activeModel.label + ' overall pass rate</div>' +
+      qualitySection =
+        '<div class="klam-report-section"><h4>Quality &amp; speed</h4>' +
+          '<div class="klam-report-grid">' +
+            '<div class="klam-report-item"><strong>' + KRISTA_BENCHMARK.overall.toFixed(1) + '%</strong>Krista LLM overall pass rate</div>' +
+            '<div class="klam-report-item"><strong>' + bench.overall.toFixed(1) + '%</strong>' + activeModel.label + ' overall pass rate</div>' +
+          '</div>' +
         '</div>';
-    } else {
-      qualityHTML = '<p style="font-size:12.5px;color:var(--gray);">Benchmark data is not available for ' + activeModel.label + ' specifically. Across benchmarked frontier models, Krista LLM scored 80&ndash;97% near-parity pass rates.</p>';
     }
 
     reportView.innerHTML =
@@ -1194,16 +1233,17 @@
         '<p style="font-size:12.5px;color:var(--gray);margin-top:8px;">' + fitMsg.textContent + '</p>' +
       '</div>' +
 
-      '<div class="klam-report-section"><h4>Cost estimate &mdash; ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, vs. ' + activeModel.label + '</h4>' +
+      '<div class="klam-report-section"><h4>Cost estimate &mdash; ' + tokensM + 'M tokens/month, ' + pct + '% routed to Krista LLM, ' + IO_RATIO + ':1 input/output mix, vs. ' + activeModel.label + '</h4>' +
         '<div class="klam-report-grid">' +
           '<div class="klam-report-item"><strong>' + costFrontier.textContent + '</strong>All on ' + activeModel.label + '</div>' +
           '<div class="klam-report-item"><strong>' + costKrista.textContent + '</strong>With Krista routing</div>' +
           '<div class="klam-report-item"><strong>' + savingsMonthly.textContent + '</strong>Monthly savings</div>' +
           '<div class="klam-report-item"><strong>' + savingsAnnual.textContent + '</strong>Annual savings</div>' +
         '</div>' +
+        '<p style="font-size:11px;color:var(--gray);margin-top:8px;">Krista LLM priced at $' + KRISTA.input.toFixed(2) + '/M input and $' + KRISTA.output.toFixed(2) + '/M output; ' + activeModel.label + ' at $' + activeModel.input.toFixed(2) + '/M input and $' + activeModel.output.toFixed(2) + '/M output (list price), blended at a ' + IO_RATIO + ':1 input/output mix.</p>' +
       '</div>' +
 
-      '<div class="klam-report-section"><h4>Quality &amp; speed</h4>' + qualityHTML + '</div>' +
+      qualitySection +
 
       '<div class="klam-report-section"><h4>What you get with Krista</h4>' +
         '<p style="font-size:12.5px;color:var(--gray);line-height:1.6;"><strong>Role-based access &amp; model portfolios:</strong> each role gets its own model portfolio, guardrails, and budget, enforced consistently across the workforce.</p>' +
@@ -1211,7 +1251,7 @@
       '</div>' +
 
       '<div class="klam-report-section"><h4>Sources</h4>' +
-        '<p style="font-size:11px;color:var(--gray);">Krista <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">"Breaking the Celebrity LLM Monopoly"</a> benchmark report &middot; OpenAI API pricing (developers.openai.com/api/docs/pricing) &middot; Claude API pricing (claude.com/pricing)</p>' +
+        '<p style="font-size:11px;color:var(--gray);">Model pricing: <a href="https://pricepertoken.com/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Price Per Token</a>, <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Artificial Analysis</a>, <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">BenchLM</a>, and vendor pricing pages (OpenAI, Anthropic, xAI). Prices are per-million input and output list rates, blended at the selected input/output mix. Krista benchmark: <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">"Breaking the Celebrity LLM Monopoly."</a></p>' +
       '</div>';
 
     reportView.classList.add('klam-report-visible');
@@ -1263,6 +1303,7 @@
 
   tokenSlider.addEventListener('input', recalcCost);
   pctSlider.addEventListener('input', recalcCost);
+  ratioSlider.addEventListener('input', recalcCost);
 
   renderModelButtons();
   recalcCost();
