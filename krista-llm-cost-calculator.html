@@ -682,7 +682,7 @@
             <span class="klam-slider-val" id="pctVal">80%</span>
           </div>
           <input type="range" id="pctSlider" min="0" max="100" value="80" step="5">
-          <div class="klam-slider-caption">Defaults to the split from your answers above. Krista's benchmark testing found roughly 80% of enterprise workloads — routine data processing, agentic automation, standard Q&amp;A — run at near-parity quality on the Krista LLM. The rest routes to a frontier model automatically.</div>
+          <div class="klam-slider-caption">Defaults to the split from your answers above. Based on Krista's internal evaluations, up to 80% of evaluated day-to-day enterprise tasks — including extraction, summarization, standard Q&amp;A, and structured automation — can run effectively on the Krista LLM. The rest routes to a frontier model automatically.</div>
         </div>
 
         <div class="klam-slider-row">
@@ -745,7 +745,7 @@
         <a class="klam-cta-secondary" href="https://krista.ai/contact/?utm_source=calculator&amp;utm_medium=web&amp;utm_campaign=llm-cost-calculator" target="_blank" rel="noopener">Schedule a Strategy Session</a>
       </div>
 
-      <p class="klam-footnote">Estimates only. Krista LLM is priced at $0.15 per million input tokens and $0.30 per million output tokens, contained inside your private instance. Comparison-model prices are per-million input and output list rates, blended at the input/output mix you select above (default 6:1). Actual savings depend on your workload mix, model selection, and routing configuration.<br>Sources: <a href="https://pricepertoken.com/" target="_blank" rel="noopener">Price Per Token</a> · <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener">Artificial Analysis</a> · <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener">BenchLM</a> · <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> · <a href="https://claude.com/pricing#api" target="_blank" rel="noopener">Claude API pricing</a> · <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">Breaking the Celebrity LLM Monopoly</a></p>
+      <p class="klam-footnote">Estimates only. Krista LLM is hosted and managed by Krista as part of the platform. It is priced at $0.15 per million input tokens and $0.30 per million output tokens, contained inside your private instance. Comparison-model prices are per-million input and output list rates, blended at the input/output mix you select above (default 6:1). Actual savings depend on your workload mix, model selection, and routing configuration.<br>Sources: <a href="https://pricepertoken.com/" target="_blank" rel="noopener">Price Per Token</a> · <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener">Artificial Analysis</a> · <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener">BenchLM</a> · <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> · <a href="https://claude.com/pricing#api" target="_blank" rel="noopener">Claude API pricing</a> · <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener">Google Gemini API pricing</a> · <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener">Breaking the Celebrity LLM Monopoly</a></p>
     </div>
 
   </div>
@@ -829,7 +829,9 @@
     { id:'gpt-5-6-terra', label:'GPT-5.6 Terra',  vendor:'OpenAI',    input:2.50,  output:15.00 },
     { id:'gpt-5-6-luna',  label:'GPT-5.6 Luna',   vendor:'OpenAI',    input:1.00,  output:6.00  },
     { id:'grok-4-5',      label:'Grok 4.5',       vendor:'xAI',       input:2.00,  output:6.00  },
-    { id:'grok-4-3',      label:'Grok 4.3',       vendor:'xAI',       input:1.25,  output:2.50  }
+    { id:'grok-4-3',      label:'Grok 4.3',       vendor:'xAI',       input:1.25,  output:2.50  },
+    { id:'gemini-3-5-flash',      label:'Gemini 3.5 Flash',      vendor:'Google', input:2.70, output:16.20 },
+    { id:'gemini-3-1-flash-lite', label:'Gemini 3.1 Flash-Lite', vendor:'Google', input:0.45, output:2.70  }
   ];
   let activeModel = MODELS.find(function(m){ return m.default; }) || MODELS[0];
 
@@ -1251,7 +1253,7 @@
       '</div>' +
 
       '<div class="klam-report-section"><h4>Sources</h4>' +
-        '<p style="font-size:11px;color:var(--gray);">Model pricing: <a href="https://pricepertoken.com/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Price Per Token</a>, <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Artificial Analysis</a>, <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">BenchLM</a>, and vendor pricing pages (OpenAI, Anthropic, xAI). Prices are per-million input and output list rates, blended at the selected input/output mix. Krista benchmark: <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">"Breaking the Celebrity LLM Monopoly."</a></p>' +
+        '<p style="font-size:11px;color:var(--gray);">Model pricing: <a href="https://pricepertoken.com/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Price Per Token</a>, <a href="https://artificialanalysis.ai/tools/llm-price-calculator" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Artificial Analysis</a>, <a href="https://benchlm.ai/llm-pricing" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">BenchLM</a>, and vendor pricing pages (OpenAI, Anthropic, xAI, <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">Google Gemini</a>). Prices are per-million input and output list rates, blended at the selected input/output mix. Krista benchmark: <a href="https://krista.ai/breaking-the-celebrity-llm-monopoly/" target="_blank" rel="noopener" style="font-size:11px;color:#0E7A9C;">"Breaking the Celebrity LLM Monopoly."</a></p>' +
       '</div>';
 
     reportView.classList.add('klam-report-visible');
